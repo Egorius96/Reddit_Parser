@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
-import urllib.request
+import time
+from selenium import webdriver
+
 
 def spider():
     url = 'https://www.reddit.com/top/?t=month'
@@ -10,15 +12,29 @@ def spider():
     with open('result.txt', 'w', encoding="utf-8") as result:
         result.write(str(soup.encode("utf-8")))
 
-    #print(soup.prettify())
-
-spider()
+#spider()
 
 
+def get_html_code(url):
+    driver = webdriver.Chrome(
+        executable_path='G:\YandexDisk\study\Python\PycharmProjects\Reddit_Parser\chromedriver.exe'
+    )
+
+    #driver.maximize_window()
+
+    try:
+        driver.get(url=url)
+        time.sleep(3)
+    except Exception as _ex:
+        print(_ex)
+    finally:
+        driver.close()
+        driver.quit()
 
 
+def main():
+    get_html_code(url='https://www.reddit.com/top/?t=month')
 
-# post_url = urllib.request.urlopen("https://www.reddit.com/r/antiwork/comments/q82vqk/quit_my_job_last_night_it_was_nice_to_be_home_to/")
-# print (post_url.read())
 
-
+if __name__ == "__main__":
+    main()
