@@ -31,42 +31,61 @@ def get_user_urls(main_html_code):
     return user_url
 
 
-def get_data(main_html_code):
+def get_data(main_html_code, user_urls, date):
     data = []
     element = BeautifulSoup(main_html_code, 'html.parser').find_all('div', attrs={'class' : '_1oQyIsiPHYt6nx7VOmd1sz'})
-    for post in element:
-        try:
+    try:
+        for post in element:
             if len(data) <= 4:
                 data.append({
                     'username' : post.find('a', attrs={'class' : '_2tbHP6ZydRpjI44J3syuqC'}).text[2:],
                     'number of comments' : post.find('span', attrs={'class' : 'FHCV02u6Cp2zYL0fhQPsO'}).text.split(' ')[0],
                     'number of votes': post.find('div', attrs={'class': '_1rZYMD_4xY3gRcSS3p8ODO'}).text,
                     'post category': post.find('a', attrs={'class': '_3ryJoIoycVkA88fy40qNJc'}, text=True).text[2:],
+                    'post URL': post.find('a', attrs={'class': '_3jOxDPIQ0KaOWpzvSQo-1s'}).get('href'),
                 })
             else: pass
-        except Exception as _ex:
-            print(_ex)
+
+        driver = webdriver.Chrome(
+            executable_path='G:\YandexDisk\study\Python\PycharmProjects\Reddit_Parser\chromedriver.exe')
+        for index, user_url in enumerate(user_urls):
+            driver.get(url=user_url)
+            user_html_code = driver.page_source
+            data[index]['post karma'] = BeautifulSoup(user_html_code, 'html.parser').find('span', class_='karma').text
+            data[index]['comment karma'] = BeautifulSoup(user_html_code, 'html.parser').find('span', class_='comment-karma').text
+            post_date = str(BeautifulSoup(user_html_code, 'html.parser').find('span', class_='age').find('time'))
+            data[index]['cake day'] = post_date[post_date.find('title="') + 7:post_date.find(' UTC')]
+        driver.close()
+        driver.quit()
+    except Exception as _ex:
+        print(_ex)
+    for index in range(len(date) - 1):
+        data[index]['post date'] = date[index]
     return data
 
 def get_date(main_html_code):
+    date = []
     element = BeautifulSoup(main_html_code, 'html.parser').find_all('div', attrs={'class': '_1oQyIsiPHYt6nx7VOmd1sz'})
     for post in element:
         try:
-            str = post.find('a', attrs={'class': '_3jOxDPIQ0KaOWpzvSQo-1s'}).text
-            if 'days' or 'day' in str:
-                date = (datetime.today() - timedelta(int(str.split(' ')[0]))).strftime('%Y %m %d')
+            date_str = post.find('a', attrs={'class': '_3jOxDPIQ0KaOWpzvSQo-1s'}).text
+            if 'days' in date_str or 'day' in date_str:
+                date.append((datetime.today() - timedelta(int(date_str.split(' ')[0]))).strftime('%Y %m %d'))
+            elif 'month' in date_str:
+                date.append((datetime.today() - timedelta(days=30)).strftime('%Y %m %d'))
             else:
-                num = datetime.today().strftime('%Y %m %d')
+                date.append(datetime.today().strftime('%Y %m %d'))
         except Exception as _ex:
             print(_ex)
+    return date
 
 
 def main():
     main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month')
     user_urls = get_user_urls(main_html_code)
-    # data = get_data(main_html_code)
-    print(user_urls)
-    # get_date(main_html_code)
+    date = get_date(main_html_code)
+    data = get_data(main_html_code, user_urls, date)
+    print(data)
     # with open('result.txt', 'w', encoding="utf-8") as result:
     #     result.write(str(post_urls))
 
