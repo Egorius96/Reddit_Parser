@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 def get_html_code(url: str) -> str:
     ''' get html code is 150 posts in size from main reddit page '''
     driver = webdriver.Chrome(
-        executable_path='G:\YandexDisk\study\Python\PycharmProjects\Reddit_Parser\chromedriver.exe')
+        executable_path=(os.getcwd() + '\chromedriver.exe'))
     try:
         driver.get(url=url)
         while True:
