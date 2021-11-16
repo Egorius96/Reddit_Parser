@@ -2,7 +2,10 @@
 
 ## Start app:
 ```
-pip install -r requirements.txt
+- pip install -r requirements.txt
+- Download chromedriver for your chrome version and operating system version at:
+https://chromedriver.storage.googleapis.com/index.html
+- Unpack chromedriver to the root folder of the script.
 ```
 
 
