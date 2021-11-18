@@ -7,12 +7,12 @@ from datetime import datetime, timedelta
 def get_html_code(url: str) -> str:
     ''' get html code is 150 posts in size from main reddit page '''
     driver = webdriver.Chrome(
-        executable_path='G:\YandexDisk\study\Python\PycharmProjects\Reddit_Parser\chromedriver.exe')
+        executable_path=(os.getcwd() + '\chromedriver.exe'))
     try:
         driver.get(url=url)
         while True:
             posts = 0
-            while posts <= 150:
+            while posts <= 5:
                 posts = driver.page_source.count('_eYtD2XCVieq6emjKBH3m')
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             main_html_code = driver.page_source
