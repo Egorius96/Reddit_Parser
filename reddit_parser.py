@@ -1,10 +1,21 @@
-import os.path, uuid, logging
+import os.path, uuid, logging, argparse
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from datetime import datetime, timedelta
 
 
-def get_html_code(url: str) -> str:
+def argparsing() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--posts', type=int, help='number of posts', default=100)
+    args = parser.parse_args()
+
+    if args.posts != 100:
+        post_count = args.posts
+    else:
+        post_count = 100
+    return post_count
+
+def get_html_code(url: str, post_count: int) -> str:
     ''' get html code is 150 posts in size from main reddit page '''
     driver = webdriver.Chrome(
         executable_path=(os.getcwd() + '\chromedriver.exe'))
@@ -12,7 +23,7 @@ def get_html_code(url: str) -> str:
         driver.get(url=url)
         while True:
             posts = 0
-            while posts <= 5:
+            while posts <= (post_count + int((post_count / 2))):
                 posts = driver.page_source.count('_eYtD2XCVieq6emjKBH3m')
                 driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             main_html_code = driver.page_source
@@ -104,7 +115,7 @@ def get_data(main_html_code: str, user_urls: list, date: list) -> list:
     return data
 
 
-def write_file(data: list) -> None:
+def write_file(data: list, post_count: int) -> None:
     ''' writing data to file '''
     count: int = 0
     file_name: str = 'reddit-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt'
@@ -120,7 +131,7 @@ def write_file(data: list) -> None:
     # fixing the number of posts = 100
     for index in data:
         if len(index) == 10:
-            if count == 100:
+            if count == post_count:
                 break
             else:
                 with open(file_name, 'a', encoding="utf-8") as result:
@@ -128,18 +139,19 @@ def write_file(data: list) -> None:
                         if key == 'post date':
                             result.write(f'{key} - {value}\n')
                             count += 1
-                            if count == 100:
+                            if count == post_count:
                                 break
                         else:
                             result.write(f'{key} - {value}; ')
 
 
 def main():
-    main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month')
+    post_count = argparsing()
+    main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count)
     user_urls = get_user_urls(main_html_code)
     date = get_date(main_html_code)
     data = get_data(main_html_code, user_urls, date)
-    write_file(data)
+    write_file(data, post_count)
 
 
 if __name__ == "__main__":
