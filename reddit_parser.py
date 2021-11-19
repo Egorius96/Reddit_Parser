@@ -4,16 +4,24 @@ from selenium import webdriver
 from datetime import datetime, timedelta
 
 
-def argparsing() -> int:
+def argparsing() -> list:
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--posts', type=int, help='number of posts', default=100)
+    parser.add_argument('-p', '--posts', type=int, help='enter the number of posts', default=100)
+    parser.add_argument('-n', '--name', type=str, help='enter the file name', default='default')
     args = parser.parse_args()
 
     if args.posts != 100:
         post_count = args.posts
     else:
         post_count = 100
-    return post_count
+
+    if args.name != 'default':
+        file_name = args.name
+    else:
+        file_name = 'default'
+
+    return [post_count, file_name]
+
 
 def get_html_code(url: str, post_count: int) -> str:
     ''' get html code is 150 posts in size from main reddit page '''
@@ -115,10 +123,17 @@ def get_data(main_html_code: str, user_urls: list, date: list) -> list:
     return data
 
 
-def write_file(data: list, post_count: int) -> None:
+def write_file(data: list, post_count: int, file_name: str) -> None:
     ''' writing data to file '''
     count: int = 0
-    file_name: str = 'reddit-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt'
+
+    # checking for a custom file name
+    # forced file type .txt
+    if file_name == 'default':
+        file_name: str = 'reddit-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt'
+    else:
+        if file_name[-4:] != '.txt':
+            file_name = file_name + '.txt'
 
     # deleting file with same name
     if os.path.exists(file_name):
@@ -146,12 +161,12 @@ def write_file(data: list, post_count: int) -> None:
 
 
 def main():
-    post_count = argparsing()
-    main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count)
+    post_count_file_name = argparsing()
+    main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count_file_name[0])
     user_urls = get_user_urls(main_html_code)
     date = get_date(main_html_code)
     data = get_data(main_html_code, user_urls, date)
-    write_file(data, post_count)
+    write_file(data, post_count_file_name[0], post_count_file_name[1])
 
 
 if __name__ == "__main__":
