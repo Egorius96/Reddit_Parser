@@ -5,10 +5,10 @@ import logging
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from datetime import datetime, timedelta
-from typing import List, Dict, AnyStr, Optional
+from typing import List, Dict, AnyStr, Any
 
 
-def argparsing() -> List[AnyStr]:
+def argparsing() -> List[Any]:
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--posts', type=int, help='enter the number of posts', default=100)
     parser.add_argument('-n', '--name', type=str, help='enter the file name', default='default')
@@ -81,7 +81,7 @@ def get_date(main_html_code: str) -> List[AnyStr]:
     reddit and converted to the required format using datetime.
 
     :param main_html_code: str with result of executing get_html_code function
-    :return: List with dates of posts
+    :return: list with dates of posts
     """
     post_date = []
     element = BeautifulSoup(main_html_code, 'html.parser').find_all('div', attrs={'class': '_1oQyIsiPHYt6nx7VOmd1sz'})
@@ -102,15 +102,15 @@ def get_date(main_html_code: str) -> List[AnyStr]:
     return post_date
 
 
-def get_data(main_html_code: str, user_urls: list, post_date: list) -> Optional[List[Dict[AnyStr, AnyStr]]]:
+def get_data(main_html_code: str, user_urls: list, post_date: list) -> List[Dict[AnyStr, AnyStr]]:
     """
     Data parsing using html main reddit page, user urls, date,
     adding ready-made data to the list of dictionaries
 
     :param main_html_code: str with result of executing get_html_code function
-    :param user_urls: List wist user urls
-    :param post_date: List with dates of posts
-    :return: List of dictionaries with received data
+    :param user_urls: list wist user urls
+    :param post_date: list with dates of posts
+    :return: list of dictionaries with received data
     """
     data = []
 
@@ -164,10 +164,10 @@ def write_file(data: list, post_count: int, file_name: str) -> None:
     """
     Writing data to file
 
-    :param data: List of dictionaries with received data
+    :param data: list of dictionaries with received data from get_data function
     :param post_count: int value from  argparsing function to determine
                        the number of posts in the output file
-    :param file_name: str value from  argparsing function to determine
+    :param file_name: str value from argparsing function to determine
                       the file name
     :return: None
     """
@@ -176,23 +176,27 @@ def write_file(data: list, post_count: int, file_name: str) -> None:
     if file_name == 'default':
         file_name: str = 'reddit-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt'
     else:
-        if file_name[-4:] != '.txt':
+        if '.' in file_name:
+            if file_name.split('.')[1] != 'txt':
+                file_name = file_name.split('.')[0] + '.txt'
+        else:
             file_name = file_name + '.txt'
 
     ''' deleting file with same name '''
     if os.path.exists(file_name):
         os.remove(file_name)
 
-    ''' writing data to a file in a readable format; checking
-    for integrity of information, if information isn't
-    fully collected, all data about the post is skipped '''
+    ''' writing data to a file in a readable format;
+    checking for integrity of information, if information isn't
+    fully collected, i.e. less than 10 data points all data
+    about the post is skipped '''
     with open(file_name, 'a', encoding="utf-8") as result:
-        for index in data:
-            if len(index) == 10:
+        for post in data:
+            if len(post) == 10:
                 if count == post_count:
                     break
                 else:
-                    for key, value in index.items():
+                    for key, value in post.items():
                         if key == 'post date':
                             result.write(f'{key} - {value}\n')
                             count += 1
@@ -201,12 +205,12 @@ def write_file(data: list, post_count: int, file_name: str) -> None:
 
 
 def main():
-    post_count_file_name = argparsing()
-    main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count_file_name[0])
+    post_count, file_name = argparsing()
+    main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count)
     user_urls = get_user_urls(main_html_code)
     post_date = get_date(main_html_code)
     data = get_data(main_html_code, user_urls, post_date)
-    write_file(data, post_count_file_name[0], post_count_file_name[1])
+    write_file(data, post_count, file_name)
 
 
 if __name__ == "__main__":

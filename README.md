@@ -1,14 +1,23 @@
 # **Reddit_Parser**
+Reddit_Parser collects information about users and posts from site www.reddit.com and saves it to the output file
 
-## Start app:
+## Installation:
 ```
-- pip install -r requirements.txt
+- Install Python 3.9
 - Download chromedriver for your chrome version and operating system version at:
 https://chromedriver.storage.googleapis.com/index.html
-- Unpack chromedriver to the root folder of the script.
+- Unpack chromedriver to the root folder of the script
+- git clone https://github.com/Egorius96/Reddit_Parser.git
 ```
 
-## Optional arguments:
+## Preparing to launch app:
+```
+- virtualenv venv
+- sourse vemv/bin/activate
+- pip install -r requirements.txt
+```
+
+## Using optional arguments:
 ```
 -h, --help     Show this help message and exit
 -p, --posts    Enter the number of posts (default 100)
