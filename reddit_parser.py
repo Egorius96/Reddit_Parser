@@ -1,23 +1,26 @@
-import os.path
 import argparse
-import uuid
+import json
 import logging
+import os.path
+import uuid
+from datetime import datetime, timedelta
+from typing import List, AnyStr, Any
+
+import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from datetime import datetime, timedelta
-from typing import List, Dict, AnyStr, Any
 
 
 def argparsing() -> List[Any]:
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--posts', type=int, help='enter the number of posts', default=100)
+    parser.add_argument('-p', '--posts', type=int, help='enter the number of posts', default=5)
     parser.add_argument('-n', '--name', type=str, help='enter the file name', default='default')
     args = parser.parse_args()
 
-    if args.posts != 100:
+    if args.posts != 5:
         post_count = args.posts
     else:
-        post_count = 100
+        post_count = 5
 
     if args.name != 'default':
         file_name = args.name
@@ -102,7 +105,7 @@ def get_date(main_html_code: str) -> List[AnyStr]:
     return post_date
 
 
-def get_data(main_html_code: str, user_urls: list, post_date: list) -> List[Dict[AnyStr, AnyStr]]:
+def get_data(main_html_code: str, post_date: list, user_urls: list) -> None:
     """
     Data parsing using html main reddit page, user urls, date,
     adding ready-made data to the list of dictionaries
@@ -131,6 +134,19 @@ def get_data(main_html_code: str, user_urls: list, post_date: list) -> List[Dict
                                 level=logging.WARNING)
             logging.warning(f'{_ex} - Page content is unavailable or user has been deleted')
 
+    ''' adding post date '''
+    try:
+        for index in range(len(data) - 1):
+            data[index]['post date'] = post_date[index]
+    except Exception as _ex:
+        logging.basicConfig(filename='log-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt',
+                            level=logging.WARNING)
+        logging.warning(f'{_ex} - Page content is unavailable or user has been deleted')
+
+    get_users_data(data, user_urls)
+
+
+def get_users_data(data, user_urls):
     ''' adding post karma, comment karma, user cake day '''
     driver = webdriver.Chrome()
     for index, user_url in enumerate(user_urls):
@@ -142,22 +158,13 @@ def get_data(main_html_code: str, user_urls: list, post_date: list) -> List[Dict
                                                          'html.parser').find('span', class_='comment-karma').text
             cake_day = str(BeautifulSoup(user_html_code, 'html.parser').find('span', class_='age').find('time'))
             data[index]['user cake day'] = cake_day[cake_day.find('title="') + 7: cake_day.find(' UTC')]
+            requests.post('http://127.0.0.1:8087/posts', data=json.dumps(data[index]))
         except Exception as _ex:
             logging.basicConfig(filename='log-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt',
                                 level=logging.WARNING)
             logging.warning(f'{_ex} {user_url} - Page content is unavailable or user has been deleted')
     driver.close()
     driver.quit()
-
-    ''' adding post date '''
-    try:
-        for index in range(len(data) - 1):
-            data[index]['post date'] = post_date[index]
-    except Exception as _ex:
-        logging.basicConfig(filename='log-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt',
-                            level=logging.WARNING)
-        logging.warning(f'{_ex} - Page content is unavailable or user has been deleted')
-    return data
 
 
 def write_file(data: list, post_count: int, file_name: str) -> None:
@@ -197,7 +204,7 @@ def write_file(data: list, post_count: int, file_name: str) -> None:
                     break
                 else:
                     for key, value in post.items():
-                        if key == 'post date':
+                        if key == 'user cake day':
                             result.write(f'{key} - {value}\n')
                             count += 1
                         else:
@@ -209,8 +216,7 @@ def main():
     main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count)
     user_urls = get_user_urls(main_html_code)
     post_date = get_date(main_html_code)
-    data = get_data(main_html_code, user_urls, post_date)
-    write_file(data, post_count, file_name)
+    get_data(main_html_code, post_date, user_urls)
 
 
 if __name__ == "__main__":
