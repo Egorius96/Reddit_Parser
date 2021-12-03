@@ -13,14 +13,14 @@ from selenium import webdriver
 
 def argparsing() -> List[Any]:
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--posts', type=int, help='enter the number of posts', default=5)
+    parser.add_argument('-p', '--posts', type=int, help='enter the number of posts', default=3)
     parser.add_argument('-n', '--name', type=str, help='enter the file name', default='default')
     args = parser.parse_args()
 
-    if args.posts != 5:
+    if args.posts != 3:
         post_count = args.posts
     else:
-        post_count = 5
+        post_count = 3
 
     if args.name != 'default':
         file_name = args.name
@@ -105,7 +105,7 @@ def get_date(main_html_code: str) -> List[AnyStr]:
     return post_date
 
 
-def get_data(main_html_code: str, post_date: list, user_urls: list) -> None:
+def get_data(main_html_code: str, post_date: list, user_urls: list, post_count: int) -> None:
     """
     Data parsing using html main reddit page, user urls, date,
     adding ready-made data to the list of dictionaries
@@ -143,10 +143,10 @@ def get_data(main_html_code: str, post_date: list, user_urls: list) -> None:
                             level=logging.WARNING)
         logging.warning(f'{_ex} - Page content is unavailable or user has been deleted')
 
-    get_users_data(data, user_urls)
+    get_users_data(data, user_urls, post_count)
 
 
-def get_users_data(data, user_urls):
+def get_users_data(data, user_urls, post_count):
     ''' adding post karma, comment karma, user cake day '''
     driver = webdriver.Chrome()
     for index, user_url in enumerate(user_urls):
@@ -158,7 +158,8 @@ def get_users_data(data, user_urls):
                                                          'html.parser').find('span', class_='comment-karma').text
             cake_day = str(BeautifulSoup(user_html_code, 'html.parser').find('span', class_='age').find('time'))
             data[index]['user cake day'] = cake_day[cake_day.find('title="') + 7: cake_day.find(' UTC')]
-            requests.post('http://127.0.0.1:8087/posts', data=json.dumps(data[index]))
+            if index <= post_count - 1:
+                requests.post('http://127.0.0.1:8087/posts', data=json.dumps(data[index]))
         except Exception as _ex:
             logging.basicConfig(filename='log-' + datetime.now().strftime('%Y%m%d%H%M') + '.txt',
                                 level=logging.WARNING)
@@ -216,7 +217,7 @@ def main():
     main_html_code = get_html_code(url='https://www.reddit.com/top/?t=month', post_count=post_count)
     user_urls = get_user_urls(main_html_code)
     post_date = get_date(main_html_code)
-    get_data(main_html_code, post_date, user_urls)
+    get_data(main_html_code, post_date, user_urls, post_count)
 
 
 if __name__ == "__main__":
