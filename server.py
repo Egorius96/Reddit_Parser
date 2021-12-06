@@ -2,6 +2,7 @@ import hashlib
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from io import BytesIO
+import logging
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -20,7 +21,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             file_name = file_name + '.txt'
 
-
     def do_GET(self) -> None:
         """
         Triggered when a GET request is received, checks the contents of self.path
@@ -38,7 +38,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if the UNIQUE_ID exists, the response code is 201
                 if the UNIQUE_ID does not exist, the response code is 404 '''
             elif '/posts' in self.path and not self.path.endswith('/posts/'):
-                UNIQUE_ID = self.path[7:]
+                UNIQUE_ID = self.path.split('/')[2]
                 with open(self.file_name, 'r') as text:
                     list_dicts = eval(text.read())
                     for post in list_dicts:
@@ -54,7 +54,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
             self.wfile.write('File does not exist'.encode('utf-8'))
-
 
     def do_POST(self) -> None:
         """
@@ -73,6 +72,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                     replacing_content = text.read()
             except FileNotFoundError:
                 print('File does not exist')
+                logging.basicConfig(filename='serverlog-' + datetime.now().strftime('%Y%m%d')
+                                             + '.txt', level=logging.WARNING)
+                logging.warning(f'{FileNotFoundError} - File does not exist')
 
             ''' Check if the file is created, but empty, then replacing_content var
             will be in string format (dictionary is needed).'''
@@ -110,7 +112,6 @@ class RequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write('Already exist!'.encode('utf-8'))
 
-
     def do_DELETE(self) -> None:
         """
         Triggered when a DELETE request is received, checks for records containing
@@ -119,7 +120,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         Verification is performed by comparing the hash sum of the file before
         deletion and the hash sum of the file after deletion.
         """
-        UNIQUE_ID = self.path[1:]
+        UNIQUE_ID = self.path.split('/')[1]
         replacing_content = []
 
         '''saving the hash sum before the change'''
@@ -134,7 +135,6 @@ class RequestHandler(BaseHTTPRequestHandler):
         for line in list_dicts:
             if UNIQUE_ID != line['UNIQUE_ID']:
                 replacing_content.append(line)
-        del line
 
         '''writing modified data to a file'''
         with open(self.file_name, 'w') as text:
@@ -154,7 +154,6 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write('Deletion completed!'.encode('utf-8'))
 
-
     def do_PUT(self) -> None:
         """
         Triggered when a PUT request is received, checks for records containing
@@ -163,7 +162,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         Verification is performed by comparing the hash sum of the file before
         changing data and the hash sum of the file after changing data.
         """
-        UNIQUE_ID = self.path[1:]
+        UNIQUE_ID = self.path.split('/')[1]
         replacing_content = []
         content_length = int(self.headers['Content-length'])
         body = self.rfile.read(content_length)
@@ -185,7 +184,6 @@ class RequestHandler(BaseHTTPRequestHandler):
                 replacing_content.append(line)
             else:
                 replacing_content.append(dict_data_string)
-        del line
 
         '''writing modified data to a file'''
         with open(self.file_name, 'w') as text:
